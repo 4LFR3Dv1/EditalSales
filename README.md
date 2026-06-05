@@ -14,6 +14,12 @@ npm run dev
 
 O backend roda em `http://localhost:8000` e expõe a API em `/api/v1`.
 
+## Deploy na Vercel
+
+Este repositório já inclui [`vercel.json`](C:\Users\SUPORTE\Downloads\Edital%20Sales\vercel.json) com `experimentalServices` para frontend e backend.
+
+Em produção, o frontend usa `/_/backend/api/v1` por padrão. Se quiser sobrescrever, defina `VITE_API_BASE_URL` no ambiente de build.
+
 ### Persistência
 
 O backend suporta duas estratégias:
