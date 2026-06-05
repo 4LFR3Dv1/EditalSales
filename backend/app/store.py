@@ -11,6 +11,7 @@ from .db import has_database, load_state_row, upsert_state_row
 from .seed import create_seed_state, now_iso
 
 STATE_LOCK = threading.RLock()
+_MEMORY_STATE: dict | None = None
 
 
 def create_id(prefix: str) -> str:
@@ -58,7 +59,6 @@ def ensure_data_dir() -> None:
 def _read_state_file() -> dict:
     if not STATE_FILE.exists():
         state = normalize_state(create_seed_state())
-        write_state(state)
         return state
 
     with STATE_FILE.open("r", encoding="utf-8") as handle:
@@ -67,6 +67,7 @@ def _read_state_file() -> dict:
 
 
 def read_state() -> dict:
+    global _MEMORY_STATE
     with STATE_LOCK:
         if has_database():
             try:
@@ -77,11 +78,27 @@ def read_state() -> dict:
                     return state
                 return normalize_state(state)
             except Exception:
-                return _read_state_file()
-        return _read_state_file()
+                if _MEMORY_STATE is None:
+                    _MEMORY_STATE = _read_state_file()
+                return deepcopy(_MEMORY_STATE)
+
+        try:
+            state = _read_state_file()
+        except Exception:
+            if _MEMORY_STATE is None:
+                _MEMORY_STATE = normalize_state(create_seed_state())
+            return deepcopy(_MEMORY_STATE)
+
+        if STATE_FILE.exists():
+            return state
+
+        if _MEMORY_STATE is None:
+            _MEMORY_STATE = state
+        return deepcopy(_MEMORY_STATE)
 
 
 def write_state(next_state: dict) -> dict:
+    global _MEMORY_STATE
     with STATE_LOCK:
         if has_database():
             state = normalize_state(next_state)
@@ -90,13 +107,18 @@ def write_state(next_state: dict) -> dict:
                 return upsert_state_row(state)
             except Exception:
                 pass
-        ensure_data_dir()
         state = normalize_state(next_state)
         state["meta"]["updatedAt"] = now_iso()
-        with STATE_FILE.open("w", encoding="utf-8") as handle:
-            json.dump(state, handle, ensure_ascii=False, indent=2)
-            handle.write("\n")
-        return state
+        try:
+            ensure_data_dir()
+            with STATE_FILE.open("w", encoding="utf-8") as handle:
+                json.dump(state, handle, ensure_ascii=False, indent=2)
+                handle.write("\n")
+            _MEMORY_STATE = deepcopy(state)
+            return state
+        except OSError:
+            _MEMORY_STATE = deepcopy(state)
+            return state
 
 
 def mutate_state(mutator: Callable[[dict], Any]) -> dict:

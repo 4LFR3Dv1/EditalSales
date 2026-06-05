@@ -8,7 +8,6 @@
     },
     "backend": {
       "routePrefix": "/_/backend",
-      "framework": "python",
       "entrypoint": "backend/index.py"
     }
   }
