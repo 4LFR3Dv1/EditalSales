@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.main import (
+SERVICE_ROOT = Path(__file__).resolve().parent
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
+
+from app.main import (
     _append_chat_message,
     _apply_edital_analysis,
     _build_artista,
@@ -33,9 +40,9 @@ from backend.app.main import (
     poll_due_sources,
     sync_source_by_id,
 )
-from backend.app.main import build_match_records  # re-exported for completeness
-from backend.app.store import mutate_state, read_state
-from backend.app.services import summarize_state
+from app.main import build_match_records  # re-exported for completeness
+from app.store import mutate_state, read_state
+from app.services import summarize_state
 
 
 app = FastAPI(title="Edital Sales API", version="1.0")
@@ -345,4 +352,3 @@ async def create_chat_message(scope: str, entity_id: str, request: Request) -> d
         raise HTTPException(status_code=400, detail="content obrigatorio")
     updated = mutate_state(lambda draft: _append_chat_message(draft, scope, entity_id, content))
     return {"items": list_messages(updated, scope, entity_id)}
-
