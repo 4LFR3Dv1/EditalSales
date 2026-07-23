@@ -6,7 +6,9 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite --host 0.0.0.0",
-    "backend": "python -m backend.app.main"
+    "backend": "python -m backend.app.main",
+    "test": "python -m unittest discover -s backend/tests -v",
+    "verify": "npm run build && npm run test && python -m compileall -q backend"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
