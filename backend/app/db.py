@@ -44,7 +44,7 @@ def _require_psycopg():
 
 
 def has_database() -> bool:
-    return bool(DATABASE_URL)
+    return bool(DATABASE_URL or (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY))
 
 
 def has_supabase_http() -> bool:
